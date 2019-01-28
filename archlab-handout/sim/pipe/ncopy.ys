@@ -1,0 +1,138 @@
+# Thomas Liddle
+# tliddle1
+# Jordan Golden
+# 
+# Trevor Brown
+# trevorsb
+# Christopher Dutson
+# dutsonc
+
+# ####################### DESCRIPTION ############################
+# We unrolled the loop 7 times so that each loop would copy 7 
+# memory locations at once. Before the loop we check if the length 
+# is less than 7 so that it doesn't do too many. If the length is
+# less than 7 then it will go to a second loop that does 2 at a
+# time. The second loop also checks that the length is not less
+# than two. If it is, it just does one iteration. After the loop 
+# that does 7 at a time, it checks to see if there are any 
+# remaining memory locations that need to be copied over. The way
+# it does this is by subtracting 6 from the length at the very 
+# start. That way when it subtracts 7 for each iteration in the 
+# loop it won't do 7 when only 5 are required for example.
+# We also replaced any registers with constant values being 
+# added to other registers with iaddq instructions to work faster.
+# In addition to that, we checked through the code removing any 
+# redundant or unnecessary code that only slowed down our program.
+
+#/* $begin ncopy-ys */
+##################################################################
+# ncopy.ys - Copy a src block of len words to dst.
+# Return the number of positive words (>0) contained in src.
+#
+# Include your name and ID here.
+#
+# Describe how and why you modified the baseline code.
+#
+##################################################################
+# Do not modify this portion
+# Function prologue.
+# %rdi = src, %rsi = dst, %rdx = len
+ncopy:
+
+##################################################################
+# You can modify this portion
+	# Loop header
+	xorq %rax,%rax		# count = 0;
+	andq %rdx,%rdx		# len = 0?
+	je Done			# if so, goto Done
+	iaddq $-6,%rdx		# len <= 6?
+	jle Loop2		# if so, goto Loop2: then finish
+Loop:
+	mrmovq (%rdi), %r10	# read val from src...
+	mrmovq 8(%rdi), %r11
+	mrmovq 16(%rdi), %r12
+	mrmovq 24(%rdi), %r13
+	mrmovq 32(%rdi), %r14
+	mrmovq 40(%rdi), %r9
+	mrmovq 48(%rdi), %r8
+	rmmovq %r10, (%rsi)	# ...and store it to dst
+	rmmovq %r11, 8(%rsi)
+	rmmovq %r12, 16(%rsi)
+	rmmovq %r13, 24(%rsi)
+	rmmovq %r14, 32(%rsi)
+	rmmovq %r9, 40(%rsi)
+	rmmovq %r8, 48(%rsi)
+	andq %r10, %r10		# val <= 0?
+	jle Npos1		# if so, goto Npos:
+	iaddq $1, %rax		# count++ if positive
+Npos1:
+    	andq %r11, %r11		# Check second number for Pos
+    	jle Npos2
+    	iaddq $1, %rax
+Npos2:
+    	andq %r12, %r12		# Check third number for Pos
+    	jle Npos3
+    	iaddq $1, %rax
+Npos3:
+    	andq %r13, %r13		# Check fourth number for Pos
+    	jle Npos4
+    	iaddq $1, %rax
+Npos4:
+    	andq %r14, %r14		# Check fourth number for Pos
+    	jle Npos5
+    	iaddq $1, %rax
+Npos5:
+    	andq %r9, %r9		# Check fifth number for Pos
+    	jle Npos6
+    	iaddq $1, %rax
+Npos6:
+    	andq %r8, %r8		# Check sixth number for Pos
+    	jle Npos7
+    	iaddq $1, %rax
+Npos7:
+	iaddq $56, %rdi		# src++ (7 times)
+	iaddq $56, %rsi		# dst++ (7 times)
+	iaddq $-7,%rdx      	# len-- (7 times)  > 0?
+	jg Loop			# if so, goto Loop else do the last 1-6 if not multiple of 7
+	iaddq $6,%rdx		# add 6 to determine the remainder
+	je Done			# if = 0 it means that the length was a multiple of 7
+	jmp Loop2p0		# else goto Loop2 to do the remainder
+Loop2:
+	iaddq $6,%rdx		# Sets the RDX register for the smaller loop 
+				# (Only used if the original length was less than 7)
+Loop2p0:
+	iaddq $-1,%rdx		#
+	je Loop2p4
+Loop2p1:
+	mrmovq (%rdi), %r10	# read val from src...
+	mrmovq 8(%rdi), %r11
+	rmmovq %r10, (%rsi)	# ...and store it to dst
+	rmmovq %r11, 8(%rsi)
+	andq %r10, %r10		# val <= 0?
+	jle Loop2p2		# if so, goto Loop2p2:
+	iaddq $1, %rax		# count++
+Loop2p2:
+	andq %r11, %r11		# val <= 0?
+	jle Loop2p3		# if so, goto Loop2p3:
+	iaddq $1, %rax		# count++
+Loop2p3:
+	iaddq $16,%rdi
+	iaddq $16,%rsi
+	iaddq $-2,%rdx      	# len-- > 0?
+	jg Loop2p1		# if so, goto Loop else do the last 1-5 if not multiple of 6
+	jl Done
+Loop2p4:
+	mrmovq (%rdi), %r10	# read val from src...
+	rmmovq %r10, (%rsi)	# ...and store it to dst
+	andq %r10, %r10		# val <= 0?
+	jle Done		# if so, goto Loop2p2:
+	iaddq $1, %rax		# count++
+##################################################################
+# Do not modify the following section of code
+# Function epilogue.
+Done:
+	ret
+##################################################################
+# Keep the following label at the end of your function
+End:
+#/* $end ncopy-ys */
